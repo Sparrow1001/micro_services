@@ -19,4 +19,11 @@ async def shutdown():
     mongoengine.disconnect(alias=DB_NAME)
 
 
+@app.get('/_health')
+async def health_check():
+    return {
+        'status': 'Ok'
+    }
+
+
 app.include_router(router, prefix='/v1')
