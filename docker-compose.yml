@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  product_service:
+    container_name: user_service
+    build: user_service
+    volumes:
+      - ./user_service:/code
+    ports:
+      - "8001:8000"
+
+  category_service:
+    container_name: loyalty_service
+    build: loyalty_service
+    volumes:
+      - ./loyalty_service:/code
+    ports:
+      - "8002:8000"
+
+  api_gateway:
+    image: devopsfaith/krakend:watch
+    container_name: api_gateway
+    volumes:
+      - ./krakenD:/etc/krakend
+    ports:
+      - "8080:8080"
+    command: [ "run", "-d", "-c", "/etc/krakend/krakend.json" ]
+    depends_on:
+      - product_service
+      - category_service
