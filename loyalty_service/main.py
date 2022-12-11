@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+
+from deps import init_tracer
 from router import router
 import mongoengine
 
@@ -12,6 +14,7 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup():
     mongoengine.connect(host=f"mongodb://mongo_product:27017/{DB_NAME}", alias=DB_NAME)
+    init_tracer()
 
 
 @app.on_event("shutdown")

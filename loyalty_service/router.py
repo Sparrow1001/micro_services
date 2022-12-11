@@ -1,7 +1,9 @@
+import opentracing
 from fastapi import APIRouter, status, HTTPException
 from schemas import CreateBonus, Bonus, UpdateBonus
 import services
 import mappers
+from opentracing_instrumentation.request_context import get_current_span, span_in_context
 
 
 router = APIRouter(
@@ -12,18 +14,24 @@ router = APIRouter(
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=list[Bonus])
 async def get_bonuses():
-    bonuses = await services.get_all_bonuses()
-    output = [
-        mappers.mapping_model_schema(bonus)
-        for bonus in bonuses
-    ]
-    return output
+    tracer = opentracing.global_tracer()
+    with tracer.start_span(get_bonuses.__name__, child_of=get_current_span()) as span:
+        with span_in_context(span):
+            bonuses = await services.get_all_bonuses()
+            output = [
+                mappers.mapping_model_schema(bonus)
+                for bonus in bonuses
+            ]
+            return output
 
 
 @router.post('/add', status_code=status.HTTP_201_CREATED, response_model=Bonus)
 async def add_bonus(bonus: CreateBonus):
-    bon = await services.create_bonus(bonus)
-    return mappers.mapping_model_schema(bon)
+    tracer = opentracing.global_tracer()
+    with tracer.start_span(add_bonus.__name__, child_of=get_current_span()) as span:
+        with span_in_context(span):
+            bon = await services.create_bonus(bonus)
+            return mappers.mapping_model_schema(bon)
 
 
 @router.delete('/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
