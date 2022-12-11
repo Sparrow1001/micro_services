@@ -28,3 +28,11 @@ services:
     depends_on:
       - product_service
       - category_service
+
+  mongo_product:
+    container_name: mongo_product
+    image: bitnami/mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ~/apps/mongo:/data/db

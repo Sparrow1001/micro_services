@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 
 
@@ -7,7 +8,7 @@ class BaseBonus(BaseModel):
 
 
 class Bonus(BaseBonus):
-    id: int
+    id: uuid.UUID
 
 
 class CreateBonus(BaseBonus):
