@@ -1,0 +1,53 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "workflow" ]
+  pull_request:
+    branches: [ "workflow" ]
+
+jobs:
+
+  test-image:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the test Docker image
+      run: | 
+        cd  loyalty_service
+        docker build . --file Dockerfile.test -t product-service
+    - name: Run the test Docker image
+      run: |
+        docker run loyalty_service
+  
+  load-image:
+
+    needs: test-image
+
+    runs-on: ubuntu-latest
+
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: ./loyalty_service
+          push: true
+          tags: rzhekich/micro_serv:latest
