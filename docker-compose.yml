@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  product_service:
+  user_service:
     container_name: user_service
     build: user_service
     volumes:
@@ -9,13 +9,19 @@ services:
     ports:
       - "8001:8000"
 
-  category_service:
+  loyalty_service:
     container_name: loyalty_service
     build: loyalty_service
     volumes:
       - ./loyalty_service:/code
     ports:
       - "8002:8000"
+    environment:
+      - JAEGER_AGENT_HOST=jaeger-all-in-one
+
+  healthcheck_service:
+    container_name: healthcheck_service
+    build: ./health_check_service
 
   api_gateway:
     image: devopsfaith/krakend:watch
@@ -26,5 +32,44 @@ services:
       - "8080:8080"
     command: [ "run", "-d", "-c", "/etc/krakend/krakend.json" ]
     depends_on:
-      - product_service
-      - category_service
+      - user_service
+      - loyalty_service
+
+  mongo_product:
+    container_name: mongo_product
+    image: bitnami/mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ~/apps/mongo:/data/db
+
+  jaeger-all-in-one:
+    container_name: jaeger
+    image: jaegertracing/all-in-one
+    environment:
+      - JAEGER_DISABLED=false
+    ports:
+      - "16686:16686"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus/
+    container_name: prometheus
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    hostname: grafana
+    volumes:
+      - ~/grafana:/var/lib/grafana
+    ports:
+      - "3000:3000"

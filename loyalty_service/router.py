@@ -1,6 +1,9 @@
+import opentracing
 from fastapi import APIRouter, status, HTTPException
 from schemas import CreateBonus, Bonus, UpdateBonus
-from utils import generate_bonuses
+import services
+import mappers
+from opentracing_instrumentation.request_context import get_current_span, span_in_context
 
 
 router = APIRouter(
@@ -8,34 +11,31 @@ router = APIRouter(
     prefix='/loyalty',
 )
 
-serial = 5
-bonuses = generate_bonuses(serial)
-
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=list[Bonus])
 async def get_bonuses():
-    return bonuses
+    tracer = opentracing.global_tracer()
+    with tracer.start_span(get_bonuses.__name__, child_of=get_current_span()) as span:
+        with span_in_context(span):
+            bonuses = await services.get_all_bonuses()
+            output = [
+                mappers.mapping_model_schema(bonus)
+                for bonus in bonuses
+            ]
+            return output
 
 
 @router.post('/add', status_code=status.HTTP_201_CREATED, response_model=Bonus)
 async def add_bonus(bonus: CreateBonus):
-    global serial
-    new_bonus = Bonus(
-        id=serial,
-        user_id=bonus.user_id,
-        bonus_count=bonus.bonus_count,
-    )
-    serial += 1
-    bonuses.append(new_bonus)
-    return new_bonus
+    tracer = opentracing.global_tracer()
+    with tracer.start_span(add_bonus.__name__, child_of=get_current_span()) as span:
+        with span_in_context(span):
+            bon = await services.create_bonus(bonus)
+            return mappers.mapping_model_schema(bon)
 
 
 @router.delete('/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_bonus(user_id: int):
-    for i, bonus in enumerate(bonuses):
-        if bonus.user_id == user_id:
-            bonuses.pop(i)
-            return
     raise HTTPException(
         status_code=404,
         detail=f"Not Found a user with id {user_id}",
