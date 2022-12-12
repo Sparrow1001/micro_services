@@ -17,7 +17,7 @@ jobs:
     - name: Build the test Docker image
       run: | 
         cd  loyalty_service
-        docker build . --file Dockerfile.test -t product-service
+        docker build . --file Dockerfile.test -t loyalty-service
     - name: Run the test Docker image
       run: |
         docker run loyalty_service
