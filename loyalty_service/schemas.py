@@ -11,6 +11,10 @@ class Bonus(BaseBonus):
     id: uuid.UUID
 
 
+class ApplyBonus(BaseBonus):
+    ...
+
+
 class CreateBonus(BaseBonus):
     ...
 
